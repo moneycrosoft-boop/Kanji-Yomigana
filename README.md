@@ -92,7 +92,7 @@ This extension is not published on the Chrome Web Store. Install it manually in 
 
 If this tool saved you time, consider buying me a coffee.
 
-👉 https://paypal.me/yourname/3
+👉 https://paypal.me/shhanseoul/3
 
 ---
 
