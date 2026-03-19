@@ -1,7 +1,8 @@
 # 漢字 よみがな — Kanji Yomigana
 
-Instant Kanji Reading Chrome Extension
-A Chrome extension that instantly shows the **yomigana (furigana reading)** of any kanji you click on a Japanese webpage, powered by Claude or Gemini AI.
+Instant Kanji Reading Chrome Extension that instantly shows the **yomigana (furigana reading)** of any kanji you click on a Japanese webpage, powered by Claude or Gemini AI.
+
+This project was built with the help of AI tools.
 
 ## 📸 Demo
 
