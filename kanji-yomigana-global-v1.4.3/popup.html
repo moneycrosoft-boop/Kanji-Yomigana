@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字よみがな</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #e5be64;
+      --gold-dim: rgba(229,190,100,0.35);
+      --bg-deep: #0d0d1a;
+      --bg-mid: #111124;
+      --bg-card: #1a1a35;
+      --bg-card2: #161630;
+      --text-main: #e8e4f0;
+      --text-dim: rgba(200,195,215,0.62);
+      --text-soft: rgba(200,195,215,0.42);
+      --accent: #a78bfa;
+      --accent2: #f472b6;
+      --red: #f87171;
+      --green: #34d399;
+      --blue: #60a5fa;
+      --gemini: #4285f4;
+      --openai: #10a37f;
+      --border: rgba(229,190,100,0.14);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+      --font-serif: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+    }
+
+    html, body { width: 408px; height: 600px; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1c1c38 0%, #0f1628 100%);
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .header::after {
+      content: '漢';
+      position: absolute;
+      right: -8px;
+      top: -18px;
+      font-family: var(--font-serif);
+      font-size: 82px;
+      font-weight: 700;
+      color: rgba(229,190,100,0.045);
+      pointer-events: none;
+      line-height: 1;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-title {
+      font-family: var(--font-serif);
+      font-size: 21px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      line-height: 1;
+    }
+    .header-sub {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      letter-spacing: 0.08em;
+    }
+
+    .toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 2px;
+      flex-shrink: 0;
+    }
+    .toggle-track {
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+      background: rgba(229,190,100,0.2);
+      border-radius: 10px;
+      border: 1px solid rgba(229,190,100,0.3);
+      position: relative;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .toggle-btn.on .toggle-track { background: rgba(229,190,100,0.55); border-color: var(--gold); }
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      background: rgba(180,170,200,0.6);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-btn.on .toggle-thumb { transform: translateX(16px); background: var(--gold); }
+    .toggle-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      min-width: 18px;
+      transition: color 0.2s;
+    }
+    .toggle-btn.on .toggle-label { color: var(--gold); }
+
+    .tabs {
+      display: flex;
+      background: var(--bg-mid);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 4px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font-sans);
+      font-size: 11px;
+      cursor: pointer;
+      transition: color 0.2s;
+      position: relative;
+      line-height: 1.3;
+    }
+    .tab.active { color: var(--gold); }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 2px 2px 0 0;
+    }
+    .tab[data-tab="focus"].active { color: var(--accent2); }
+    .tab[data-tab="focus"].active::after { background: var(--accent2); }
+    .tab-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 9px;
+      border-radius: 8px;
+      padding: 1px 5px;
+      margin-left: 3px;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+
+    .panel {
+      display: none;
+      padding: 12px 14px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .panel.active {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    #panel-settings {
+      overflow-y: auto;
+    }
+    #panel-settings::-webkit-scrollbar,
+    #history-list::-webkit-scrollbar,
+    .kanji-list::-webkit-scrollbar { width: 4px; }
+    #panel-settings::-webkit-scrollbar-thumb,
+    #history-list::-webkit-scrollbar-thumb,
+    .kanji-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+    .settings-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: min-content;
+    }
+
+    .section-card {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 12px 13px;
+    }
+    .section-card + .section-card { margin-top: 0; }
+    .section-title {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 5px;
+    }
+    .section-desc {
+      font-size: 10.5px;
+      line-height: 1.55;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .section-note {
+      font-size: 10px;
+      line-height: 1.5;
+      color: var(--text-soft);
+      margin-top: 7px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      margin-bottom: 8px;
+      width: fit-content;
+    }
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 10.5px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      font-weight: 600;
+    }
+    .seg-btn.active {
+      background: rgba(229,190,100,0.18);
+      color: var(--gold);
+    }
+
+    .api-cards { display: flex; flex-direction: column; gap: 7px; }
+    .api-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 11px;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+    .api-card:hover { border-color: rgba(229,190,100,0.28); }
+    .api-card.selected-claude { border-color: var(--gold); background: rgba(229,190,100,0.06); }
+    .api-card.selected-gemini { border-color: var(--gemini); background: rgba(66,133,244,0.06); }
+    .api-card.selected-openai { border-color: var(--openai); background: rgba(16,163,127,0.08); }
+    .api-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .api-card-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .api-radio {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(200,195,215,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 0.2s;
+    }
+    .api-radio::after {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background 0.2s;
+    }
+    .selected-claude .api-radio { border-color: var(--gold); }
+    .selected-claude .api-radio::after { background: var(--gold); }
+    .selected-gemini .api-radio { border-color: var(--gemini); }
+    .selected-gemini .api-radio::after { background: var(--gemini); }
+    .selected-openai .api-radio { border-color: var(--openai); }
+    .selected-openai .api-radio::after { background: var(--openai); }
+    .api-tag {
+      font-size: 9px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+    .tag-claude { background: rgba(229,190,100,0.15); color: var(--gold); }
+    .tag-gemini { background: rgba(66,133,244,0.15); color: #7ab3ff; }
+    .tag-openai { background: rgba(16,163,127,0.16); color: #7be2c7; }
+    .api-status-inline {
+      margin-left: auto;
+      display: none;
+      align-items: center;
+      gap: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      white-space: nowrap;
+      padding: 3px 7px;
+      border-radius: 999px;
+      color: #7ef0c9;
+      background: rgba(52,211,153,0.10);
+      border: 1px solid rgba(52,211,153,0.22);
+      flex-shrink: 0;
+    }
+    .api-card.saved .api-status-inline { display: inline-flex; }
+    .key-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .key-input {
+      flex: 1;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--text-main);
+      font-size: 11px;
+      font-family: monospace;
+      outline: none;
+      min-width: 0;
+      transition: border-color 0.2s;
+    }
+    .key-input:focus { border-color: rgba(229,190,100,0.35); }
+    .btn-save {
+      border: none;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .btn-save:hover { opacity: 0.86; }
+    .btn-save-claude { background: linear-gradient(135deg, #e5be64, #c9a340); color: #1a1000; }
+    .btn-save-gemini { background: linear-gradient(135deg, #60a5fa, #3b82f6); color: #fff; }
+    .btn-save-openai { background: linear-gradient(135deg, #15b38a, #0e8f6d); color: #fff; }
+    .status-msg {
+      font-size: 10px;
+      margin-top: 6px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      display: none;
+      line-height: 1.45;
+    }
+    .status-msg.info {
+      display: block;
+      background: rgba(255,255,255,0.03);
+      color: var(--text-dim);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .status-msg.error {
+      display: block;
+      background: rgba(248,113,113,0.1);
+      color: var(--red);
+      border: 1px solid rgba(248,113,113,0.2);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+    .switch-row input { accent-color: var(--gold); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .field label, .field-title {
+      font-size: 10px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .select, .textarea {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 11px;
+      font-family: var(--font-sans);
+      outline: none;
+    }
+    .select {
+      padding: 8px 10px;
+    }
+    .textarea {
+      min-height: 58px;
+      resize: vertical;
+      padding: 8px 10px;
+      line-height: 1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .textarea:focus, .select:focus { border-color: rgba(229,190,100,0.35); }
+
+    .instructions-body { display: flex; flex-direction: column; gap: 8px; }
+    .inst-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+    .inst-num {
+      width: 17px;
+      height: 17px;
+      background: var(--gold-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: var(--gold);
+      flex-shrink: 0;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .inline-link {
+      color: var(--blue);
+      text-decoration: none;
+    }
+    .inline-link:hover { text-decoration: underline; }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .inline-feedback {
+      font-size: 10px;
+      color: var(--text-dim);
+      min-height: 1.4em;
+    }
+    .inline-feedback.success { color: #7ef0c9; }
+    .inline-feedback.error { color: var(--red); }
+
+    .danger-card {
+      border-color: rgba(248,113,113,0.18);
+      background: linear-gradient(135deg, rgba(248,113,113,0.03), rgba(255,255,255,0.01));
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .panel-header-left { display: flex; align-items: center; gap: 8px; }
+    .count-text { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; flex-shrink: 0; }
+    .section-label { font-size: 10px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+    .date-badge { font-size: 10px; background: rgba(229,190,100,0.1); color: var(--gold); border-radius: 4px; padding: 2px 7px; }
+    .btn-sm {
+      background: rgba(229,190,100,0.08);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 6px 10px;
+      color: var(--gold);
+      font-size: 10.5px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-weight: 600;
+    }
+    .btn-sm:hover { background: rgba(229,190,100,0.18); }
+    .btn-clear {
+      background: none;
+      border: 1px solid rgba(248,113,113,0.25);
+      border-radius: 8px;
+      padding: 7px 8px;
+      color: rgba(248,113,113,0.55);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .btn-clear:hover { background: rgba(248,113,113,0.12); color: var(--red); border-color: var(--red); }
+    .btn-sm.danger { color: var(--red); border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.06); }
+    .btn-sm.danger:hover { background: rgba(248,113,113,0.15); }
+
+    #history-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .kanji-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 8px 8px;
+      position: relative;
+      min-width: 0;
+      animation: slideIn 0.18s ease;
+      transition: border-color 0.2s;
+    }
+    .kanji-card:hover { border-color: rgba(229,190,100,0.3); }
+    .kc-yomigana { font-size: 12px; color: var(--gold); letter-spacing: 0.06em; line-height: 1.3; word-break: break-all; margin-bottom: 3px; }
+    .kc-original { font-family: var(--font-serif); font-size: 15px; font-weight: 600; color: rgba(229,190,100,0.55); letter-spacing: 0.04em; line-height: 1.2; word-break: break-all; margin-bottom: 3px; }
+    .kc-meaning { font-size: 10px; color: var(--text-dim); line-height: 1.4; word-break: break-all; }
+    .kc-del {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(200,190,220,0.15);
+      font-size: 10px;
+      padding: 1px 3px;
+      border-radius: 3px;
+      line-height: 1;
+      transition: color 0.15s, background 0.15s;
+    }
+    .kc-del:hover { color: var(--red); background: rgba(248,113,113,0.1); }
+
+    .focus-intro {
+      background: linear-gradient(135deg, rgba(244,114,182,0.07), rgba(167,139,250,0.07));
+      border: 1px solid rgba(244,114,182,0.18);
+      border-radius: 10px;
+      padding: 11px 13px;
+      margin-bottom: 12px;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.7;
+      flex-shrink: 0;
+    }
+    .focus-intro strong { color: var(--accent2); }
+    .kanji-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .kanji-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 8px 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.18s ease;
+      transition: border-color 0.2s;
+    }
+    .kanji-item:hover { border-color: rgba(229,190,100,0.28); }
+    .kanji-item.focus-item { border-left: 3px solid var(--accent2); }
+    .ki-kanji { font-family: var(--font-serif); font-size: 21px; font-weight: 600; color: var(--gold); min-width: 38px; text-align: center; }
+    .ki-info { flex: 1; min-width: 0; }
+    .ki-yomigana { font-size: 12.5px; color: var(--accent); letter-spacing: 0.09em; }
+    .ki-meaning  { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; }
+    .ki-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+    .ki-count { font-size: 9.5px; background: rgba(167,139,250,0.14); color: var(--accent); border-radius: 4px; padding: 1px 6px; }
+    .ki-rank  { font-size: 9.5px; background: rgba(244,114,182,0.14); color: var(--accent2); border-radius: 4px; padding: 1px 6px; }
+    .ki-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(200,190,220,0.18);
+      font-size: 14px;
+      padding: 3px 5px;
+      border-radius: 5px;
+      transition: color 0.15s, background 0.15s;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .ki-del:hover { color: var(--red); background: rgba(248,113,113,0.1); }
+
+    .empty-state { text-align: center; padding: 36px 20px; color: var(--text-dim); }
+    .empty-kanji {
+      font-family: var(--font-serif);
+      font-size: 44px;
+      color: rgba(229,190,100,0.07);
+      display: block;
+      margin-bottom: 12px;
+    }
+    .empty-state p { font-size: 11.5px; line-height: 2; }
+    .list-empty {
+      display: flex !important;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .list-empty .empty-state {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+    }
+    .list-empty .empty-state p { max-width: 255px; }
+    .list-empty .empty-kanji { margin-bottom: 14px; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-5px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @media (max-width: 420px) {
+      html, body { width: 396px; }
+    }
+
+    /* v1.3.2 settings sidebar layout */
+    #panel-settings {
+      overflow: hidden;
+    }
+    .settings-layout {
+      display: flex;
+      height: 100%;
+      min-height: 0;
+    }
+    .settings-shell {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .settings-sidebar {
+      width: 76px;
+      flex: 0 0 76px;
+      border-right: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .settings-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 58px;
+      padding: 7px 5px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+      font-family: var(--font-sans);
+      text-align: center;
+    }
+    .settings-nav-btn:hover {
+      background: rgba(229,190,100,0.06);
+      border-color: rgba(229,190,100,0.12);
+    }
+    .settings-nav-btn.active {
+      background: rgba(229,190,100,0.10);
+      border-color: rgba(229,190,100,0.22);
+      color: var(--gold);
+    }
+    .settings-nav-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+      border: 1px solid rgba(229,190,100,0.14);
+      background: rgba(255,255,255,0.03);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      line-height: 1;
+    }
+    .settings-nav-btn.active .settings-nav-icon {
+      background: rgba(229,190,100,0.16);
+      border-color: rgba(229,190,100,0.26);
+    }
+    .settings-nav-label {
+      font-size: 9px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      word-break: keep-all;
+    }
+    .settings-nav-btn[data-settings-section=\"guide\"] { margin-top: auto; }
+    .settings-view {
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+    }
+    .settings-section {
+      display: none;
+      height: 100%;
+      padding: 14px 14px 16px;
+      overflow-y: auto;
+    }
+    .settings-section.active {
+      display: block;
+    }
+    .settings-section::-webkit-scrollbar {
+      width: 4px;
+    }
+    .settings-section::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 999px;
+    }
+    .settings-section .section-title {
+      margin-bottom: 6px;
+    }
+    .settings-section .section-desc {
+      margin-bottom: 10px;
+    }
+    .settings-section .segmented {
+      margin-bottom: 8px;
+    }
+    .settings-section .key-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+    .settings-section .form-grid {
+      gap: 9px;
+    }
+    .settings-section .field + .field {
+      margin-top: 0;
+    }
+    .settings-guide .section-desc {
+      margin-bottom: 11px;
+    }
+    .settings-guide .instructions-body {
+      gap: 7px;
+    }
+    .settings-guide .inst-item {
+      font-size: 10.5px;
+      line-height: 1.5;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">漢字 よみがな</div>
+        <div class="header-sub">Kanji Yomigana · Claude · Gemini · GPT</div>
+      </div>
+      <button class="toggle-btn" id="toggle-btn" title="Enable / disable">
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label" id="toggle-label">ON</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="settings">⚙ Settings</button>
+    <button class="tab" data-tab="history">📚 Today</button>
+    <button class="tab" data-tab="focus">🔥 Focus<span class="tab-badge" id="focus-badge" style="display:none">0</span></button>
+  </div>
+
+  <div class="panel active" id="panel-settings">
+    <div class="settings-layout">
+      <div class="settings-shell">
+        <aside class="settings-sidebar" aria-label="Settings sections">
+          <button class="settings-nav-btn active" data-settings-section="api" type="button" title="API">
+            <span class="settings-nav-icon" aria-hidden="true">🔑</span>
+            <span class="settings-nav-label">API</span>
+          </button>
+          <button class="settings-nav-btn" data-settings-section="privacy" type="button" title="Privacy">
+            <span class="settings-nav-icon" aria-hidden="true">🔒</span>
+            <span class="settings-nav-label">Privacy</span>
+          </button>
+          <button class="settings-nav-btn" data-settings-section="sites" type="button" title="Site access control">
+            <span class="settings-nav-icon" aria-hidden="true">🌐</span>
+            <span class="settings-nav-label">Sites</span>
+          </button>
+          <button class="settings-nav-btn" data-settings-section="language" type="button" title="Language">
+            <span class="settings-nav-icon" aria-hidden="true">🌍</span>
+            <span class="settings-nav-label">Language</span>
+          </button>
+          <button class="settings-nav-btn" data-settings-section="reset" type="button" title="Reset">
+            <span class="settings-nav-icon" aria-hidden="true">🗑</span>
+            <span class="settings-nav-label">Reset</span>
+          </button>
+          <button class="settings-nav-btn" data-settings-section="guide" type="button" title="How to use">
+            <span class="settings-nav-icon" aria-hidden="true">📘</span>
+            <span class="settings-nav-label">Guide</span>
+          </button>
+        </aside>
+
+        <div class="settings-view">
+          <section class="settings-section settings-guide" data-settings-section="guide">
+            <div class="section-title">How to use</div>
+            <div class="section-desc">You only need to set this up once when using the extension for the first time.</div>
+            <div class="instructions-body">
+              <div class="inst-item">
+                <span class="inst-num">1</span>
+                <span>Choose an AI provider and save its API key.<br>
+                  Gemini: <a class="inline-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a><br>
+                  Claude: <a class="inline-link" href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a><br>
+                  OpenAI: <a class="inline-link" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>
+                </span>
+              </div>
+              <div class="inst-item">
+                <span class="inst-num">2</span>
+                <span>Click a <strong style="color:var(--text-main)">kanji</strong> on a Japanese page to open a context-aware yomigana popup.</span>
+              </div>
+              <div class="inst-item">
+                <span class="inst-num">3</span>
+                <span>최근 <strong style="color:var(--text-main)">7일간 2회 이상</strong> 조회한 항목은 🔥 Focus에 자동으로 모입니다.</span>
+              </div>
+              <div class="inst-item">
+                <span class="inst-num">4</span>
+                <span>For text inside links or buttons, use <strong style="color:var(--text-main)">Alt-click</strong> (Option-click on Mac) to force a lookup.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section active" data-settings-section="api">
+            <div class="section-title">API providers</div>
+            <div class="section-desc">Pick the model you want to use and save its API key. The popup never shows the full key again, only a masked suffix.</div>
+
+            <div class="segmented" role="tablist" aria-label="키 저장 방식">
+              <button class="seg-btn active" id="key-storage-session-btn" type="button">Session only</button>
+              <button class="seg-btn" id="key-storage-persistent-btn" type="button">Remember on this device</button>
+            </div>
+            <div class="section-note" id="key-storage-note"></div>
+
+            <div class="api-cards">
+              <div class="api-card selected-claude" id="card-claude" data-mode="claude">
+                <div class="api-card-header">
+                  <div class="api-radio"></div>
+                  <div class="api-card-name">Claude <span class="api-tag tag-claude">Haiku 4.5</span></div>
+                  <span class="api-status-inline" id="claude-saved-chip">저장됨</span>
+                </div>
+                <div class="key-row">
+                  <input type="password" class="key-input" id="claude-key-input" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false">
+                  <button class="btn-clear" id="clear-claude-btn" title="키 삭제" type="button">✕</button>
+                  <button class="btn-save btn-save-claude" id="save-claude-btn" type="button">저장</button>
+                </div>
+                <div class="status-msg" id="claude-status"></div>
+              </div>
+
+              <div class="api-card" id="card-gemini" data-mode="gemini">
+                <div class="api-card-header">
+                  <div class="api-radio"></div>
+                  <div class="api-card-name">Gemini <span class="api-tag tag-gemini">3 Flash Preview</span></div>
+                  <span class="api-status-inline" id="gemini-saved-chip">저장됨</span>
+                </div>
+                <div class="key-row">
+                  <input type="password" class="key-input" id="gemini-key-input" placeholder="AIzaSy…" autocomplete="off" spellcheck="false">
+                  <button class="btn-clear" id="clear-gemini-btn" title="키 삭제" type="button">✕</button>
+                  <button class="btn-save btn-save-gemini" id="save-gemini-btn" type="button">저장</button>
+                </div>
+                <div class="status-msg" id="gemini-status"></div>
+              </div>
+
+              <div class="api-card" id="card-openai" data-mode="openai">
+                <div class="api-card-header">
+                  <div class="api-radio"></div>
+                  <div class="api-card-name">OpenAI <span class="api-tag tag-openai">GPT-5.4 mini</span></div>
+                  <span class="api-status-inline" id="openai-saved-chip">저장됨</span>
+                </div>
+                <div class="key-row">
+                  <input type="password" class="key-input" id="openai-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
+                  <button class="btn-clear" id="clear-openai-btn" title="키 삭제" type="button">✕</button>
+                  <button class="btn-save btn-save-openai" id="save-openai-btn" type="button">저장</button>
+                </div>
+                <div class="status-msg" id="openai-status"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section" data-settings-section="privacy">
+            <div class="section-title">개인정보 및 데이터 처리</div>
+            <div class="section-desc">클릭한 일본어 표현과 짧은 주변 문맥이 선택한 제공자에게 전송될 수 있습니다. 기본값은 최소 저장 모드이며 URL·페이지 제목·문맥 저장은 꺼져 있습니다.</div>
+
+            <label class="switch-row" for="save-metadata-toggle">
+              <input type="checkbox" id="save-metadata-toggle">
+              <span>학습 기록에 URL / 페이지 제목 / 문맥까지 함께 저장</span>
+            </label>
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="history-retention-select">학습 기록 보관 기간</label>
+                <select class="select" id="history-retention-select">
+                  <option value="7">7일</option>
+                  <option value="14">14일</option>
+                  <option value="30">30일</option>
+                  <option value="60">60일</option>
+                  <option value="90">90일</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="cache-retention-select">응답 캐시 보관 기간</label>
+                <select class="select" id="cache-retention-select">
+                  <option value="1">1일</option>
+                  <option value="3">3일</option>
+                  <option value="7">7일</option>
+                  <option value="14">14일</option>
+                  <option value="30">30일</option>
+                </select>
+              </div>
+            </div>
+
+            <a class="inline-link" href="privacy.html" target="_blank" rel="noopener noreferrer">자세한 개인정보·데이터 처리 안내 열기</a>
+          </section>
+
+          <section class="settings-section" data-settings-section="sites">
+            <div class="section-title">사이트 접근 제어</div>
+            <div class="section-desc">민감 사이트는 기본 차단 목록에 포함됩니다. 허용 목록은 항상 우선합니다.</div>
+
+            <div class="field" style="margin-bottom:10px;">
+              <label for="site-access-mode-select">작동 범위</label>
+              <select class="select" id="site-access-mode-select">
+                <option value="all_except_blocked">모든 사이트에서 작동하되 차단 목록 제외</option>
+                <option value="allow_only">허용 목록에 적은 사이트에서만 작동</option>
+              </select>
+            </div>
+
+            <div class="field" style="margin-bottom:10px;">
+              <label for="site-allowlist-input">허용 목록</label>
+              <textarea class="textarea" id="site-allowlist-input" placeholder="example.com&#10;*.example.org"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="site-blocklist-input">추가 차단 목록</label>
+              <textarea class="textarea" id="site-blocklist-input" placeholder="private.example.com&#10;secure.example.org"></textarea>
+            </div>
+
+            <div class="section-note">줄바꿈 또는 쉼표로 여러 도메인을 입력할 수 있습니다. 예: example.com, *.example.org</div>
+          </section>
+
+          <section class="settings-section" data-settings-section="language">
+            <div class="section-title">Language</div>
+            <div class="section-desc">This changes both the popup UI language and the language used for the meaning line in click popups.</div>
+            <div class="field">
+              <label for="ui-language-select">Display language</label>
+              <select class="select" id="ui-language-select"></select>
+            </div>
+            <div class="section-note" id="language-note">Choosing a language updates the settings UI and the meaning gloss together.</div>
+          </section>
+
+          <section class="settings-section" data-settings-section="reset">
+            <div class="section-title">Reset data</div>
+            <div class="section-desc">Delete saved API keys, lookup history, focus items, cache, and site settings, then restore the defaults.</div>
+            <div class="action-row">
+              <button class="btn-sm danger" id="reset-all-data-btn" type="button">모든 Reset data</button>
+              <span class="inline-feedback" id="reset-status"></span>
+            </div>
+            <div class="section-note">
+              <a class="inline-link" id="reset-privacy-link" href="privacy.html" target="_blank" rel="noopener noreferrer">Open English privacy notice</a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-history">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <span class="section-label" style="margin:0">오늘의 한자</span>
+        <span class="date-badge" id="today-badge"></span>
+      </div>
+      <button class="btn-sm danger" id="clear-today-btn" type="button">Clear today</button>
+    </div>
+    <div class="count-text" id="history-count"></div>
+    <div id="history-list"></div>
+  </div>
+
+  <div class="panel" id="panel-focus">
+    <div class="focus-intro">최근 <strong>7일간 2회 이상</strong> 조회한 항목을 <strong>횟수순</strong>으로 정리했어요.</div>
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <span class="section-label" style="margin:0">집중 암기 목록</span>
+      </div>
+      <button class="btn-sm danger" id="clear-focus-btn" type="button">Delete all</button>
+    </div>
+    <div class="count-text" id="focus-count"></div>
+    <div class="kanji-list" id="focus-list"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

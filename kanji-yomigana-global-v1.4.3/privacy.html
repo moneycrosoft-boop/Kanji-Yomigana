@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanji Yomigana · Privacy & Data Handling</title>
+  <style>
+    :root {
+      --gold: #e5be64;
+      --bg: #0d0d1a;
+      --card: #17172f;
+      --text: #ece7f4;
+      --muted: rgba(220,215,235,0.72);
+      --border: rgba(229,190,100,0.18);
+      --link: #7ab3ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(180deg, #121227 0%, #0d0d1a 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+      line-height: 1.68;
+    }
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      color: var(--gold);
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      letter-spacing: 0.04em;
+    }
+    .lead {
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    h2 {
+      font-size: 17px;
+      margin: 0 0 10px;
+      color: var(--gold);
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    code {
+      background: rgba(255,255,255,0.05);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+    a { color: var(--link); }
+    .small { color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Kanji Yomigana · Privacy & Data Handling</h1>
+    <p class="lead">This page is the extension's built-in privacy notice. For Chrome Web Store publication, it is still a good idea to host a matching privacy policy on a public URL as well.</p>
+
+    <section>
+      <h2>What this extension does</h2>
+      <p>Kanji Yomigana helps users read Japanese pages by showing context-aware yomigana when a user clicks a kanji or Japanese expression.</p>
+    </section>
+
+    <section>
+      <h2>Data sent to external AI providers</h2>
+      <ul>
+        <li>The Japanese expression that the user clicked</li>
+        <li>A short surrounding context needed to infer the correct reading</li>
+        <li>A short display helper surface when okurigana or connected kana are needed for a natural result</li>
+      </ul>
+      <p class="small">The destination provider is chosen by the user: Anthropic, Google Gemini, or OpenAI. The extension uses a BYOK (Bring Your Own Key) model, meaning the user directly enters their own API key.</p>
+    </section>
+
+    <section>
+      <h2>Data stored locally in the browser</h2>
+      <ul>
+        <li>Lookup history used for the Today and Focus views</li>
+        <li>Response cache used to reduce repeated requests, latency, and cost</li>
+        <li>User settings such as provider choice, retention periods, site access rules, and UI language</li>
+      </ul>
+      <p class="small">The default mode is minimized storage. URL, page title, and context are not stored unless the user explicitly enables extended metadata storage.</p>
+    </section>
+
+    <section>
+      <h2>API key storage modes</h2>
+      <ul>
+        <li><strong>Session only</strong>: the key is removed when the browser session ends.</li>
+        <li><strong>Remember on this device</strong>: the key remains in local browser storage across restarts.</li>
+      </ul>
+      <p class="small">After saving, the full API key is not shown again in the popup. Only a masked suffix is displayed.</p>
+    </section>
+
+    <section>
+      <h2>User controls</h2>
+      <ul>
+        <li>Choose <code>Session only</code> or <code>Remember on this device</code> for API key storage</li>
+        <li>Enable or disable extended metadata storage</li>
+        <li>Configure history and cache retention periods</li>
+        <li>Control where the extension runs with allow/block site lists</li>
+        <li>Use <code>Delete all data</code> to remove keys, settings, history, cache, and dismissed items</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Third-party providers</h2>
+      <ul>
+        <li>Anthropic Claude API</li>
+        <li>Google Gemini API</li>
+        <li>OpenAI API</li>
+      </ul>
+      <p class="small">Please also review the privacy and data handling policies of the provider you choose to use.</p>
+    </section>
+  </main>
+</body>
+</html>
